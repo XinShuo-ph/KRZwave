@@ -487,3 +487,80 @@ def bracket(mydata,mytemp,dt,fnoise=[-1,-1],Snoise=[-1,-1]):
         SNR=SNR+(( mydata_fft[i]*np.conjugate(mytemp_fft[i]) + np.conjugate(mydata_fft[i])*mytemp_fft[i])/(Sn[i]))*df
     
     return np.abs(SNR)
+
+def getfreq_fromtraj(tau,r,phi):
+    #由序列获得orbital frequency
+    p=np.mean(r)
+    omgr=[]
+    omgphi=[]
+    indr=[]
+    phi=phi-phi[0]
+    n=1
+    for i in np.arange(tau.size-1):
+        if(r[i]>p and r[i+1]<=p):
+            indr.append(i)
+
+    for ii in np.arange(len(indr)):
+        if ii==0:
+            continue
+        omgr.append(2*np.pi/(tau[indr[ii]]-tau[indr[ii-1]]))
+        omgphi.append((phi[indr[ii]]-phi[indr[ii-1]])/(tau[indr[ii]]-tau[indr[ii-1]]))
+
+    omgr=np.array(omgr)
+    avgomgr=np.mean(omgr)
+    avgomgphi=np.mean(np.array(omgphi))
+
+    return avgomgr,avgomgphi
+def getfreq_frommaxi(tau,r,phi):
+    #由序列获得orbital frequency,这个序列必须是从r最大值开始的
+    p=np.mean(r)
+    omgr=[]
+    omgphi=[]
+    indr=[]
+    phi=phi-phi[0]
+    n=1
+    for i in np.arange(tau.size-1):
+        if i==0:
+            indr.append(i)
+        elif(r[i]>r[i-1] and r[i+1]<r[i]):
+            indr.append(i)
+
+    for ii in np.arange(len(indr)):
+        if ii==0:
+            continue
+        omgr.append(2*np.pi/(tau[indr[ii]]-tau[indr[ii-1]]))
+        omgphi.append((phi[indr[ii]]-phi[indr[ii-1]])/(tau[indr[ii]]-tau[indr[ii-1]]))
+
+    omgr=np.array(omgr)
+    avgomgr=np.mean(omgr)
+    avgomgphi=np.mean(np.array(omgphi))
+
+    return avgomgr,avgomgphi
+def getfreq_fromepa(e,p,spin):
+
+    rmax=p/(1-e)
+    rmin=p/(1+e)
+    print('called')
+    invgmin=metric_KRZ_inverse(spin,0,rmin,np.pi/2)
+    invgmax=metric_KRZ_inverse(spin,0,rmax,np.pi/2)
+
+    EoverL = ((invgmax[3][0] - invgmin[3][0]) + sqrt((invgmax[3][0] - invgmin[3][0]) *(invgmax[3][0] - invgmin[3][0]) - (invgmax[0][0] - invgmin[0][0])*(invgmax[3][3] - invgmin[3][3]))) / ( invgmax[0][0]-invgmin[0][0] );
+    Lz = sqrt( (invgmax[3][0]-invgmin[3][0]) / ( EoverL*EoverL*( invgmin[3][0]*invgmax[0][0] - invgmax[3][0]*invgmin[0][0] )+ ( invgmin[3][0]*invgmax[3][3]- invgmax[3][0]*invgmin[3][3] )  )   );
+    E=Lz*EoverL
+    Q=0
+
+    dchi=1e-8#积分的精度
+    chi=np.linspace(dchi/2,np.pi-dchi/2,int(np.pi/dchi))
+
+    #reference: https://arxiv.org/pdf/gr-qc/0202090.pdf (39)-(42)
+    myJ=(1-E**2)*(1-e**2)+2*(1-E**2-(1-e**2)/p)*(1+e*np.cos(chi))+((1-E**2)*(3+e**2)/(1-e**2) -4/p +(spin**2*(1-E**2)+Lz**2+Q)*(1-e**2)/p**2 )*np.power(1+e*np.cos(chi),2)
+    myH=1-2/p*(1+e*cos(chi))+(spin**2)/(p**2)*np.power(1+e*np.cos(chi),2)
+    myG=Lz-2*(Lz-spin*E)/p*(1+e*np.cos(chi))
+
+    myY=p**2*dchi*np.sum(np.multiply( np.power(1+e*np.cos(chi),-2) ,np.power(myJ,-0.5) ))
+    myZ=dchi*np.sum(np.multiply(myG, np.multiply( np.power(myH,-1),np.power(myJ,-0.5) ) ))
+
+    myomgr=np.pi*p/(1-e**2)/myY
+    myomgphi=myZ/myY
+
+    return myomgr,myomgphi
