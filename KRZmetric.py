@@ -2,6 +2,7 @@
 # coding: utf-8
 from scipy.interpolate import interp1d
 import numpy as np
+import scipy
 from numpy import sin,cos,sqrt
 #z1就是r，z2就是theta
 
@@ -513,7 +514,7 @@ def getfreq_fromtraj(tau,r,phi):
     return avgomgr,avgomgphi
 def getfreq_frommaxi(tau,r,phi):
     #由序列获得orbital frequency,这个序列必须是从r最大值开始的
-    p=np.mean(r)
+    #p=np.mean(r)
     omgr=[]
     omgphi=[]
     indr=[]
@@ -536,31 +537,55 @@ def getfreq_frommaxi(tau,r,phi):
     avgomgphi=np.mean(np.array(omgphi))
 
     return avgomgr,avgomgphi
-def getfreq_fromepa(e,p,spin):
 
+def getfreq_dt_fromepa(e,p,spin):
     rmax=p/(1-e)
     rmin=p/(1+e)
-    print('called')
     invgmin=metric_KRZ_inverse(spin,0,rmin,np.pi/2)
     invgmax=metric_KRZ_inverse(spin,0,rmax,np.pi/2)
 
     EoverL = ((invgmax[3][0] - invgmin[3][0]) + sqrt((invgmax[3][0] - invgmin[3][0]) *(invgmax[3][0] - invgmin[3][0]) - (invgmax[0][0] - invgmin[0][0])*(invgmax[3][3] - invgmin[3][3]))) / ( invgmax[0][0]-invgmin[0][0] );
     Lz = sqrt( (invgmax[3][0]-invgmin[3][0]) / ( EoverL*EoverL*( invgmin[3][0]*invgmax[0][0] - invgmax[3][0]*invgmin[0][0] )+ ( invgmin[3][0]*invgmax[3][3]- invgmax[3][0]*invgmin[3][3] )  )   );
     E=Lz*EoverL
-    Q=0
-
-    dchi=1e-8#积分的精度
+    x=Lz-spin*E
+    
+    dchi=1e-6
     chi=np.linspace(dchi/2,np.pi-dchi/2,int(np.pi/dchi))
+    J=1-2*(1+e*np.cos(chi))/p+spin**2/p**2*(1+e*np.cos(chi))**2
+    Vr=x**2+spin**2+2*spin*x*E-2*x**2/p*(3+e*np.cos(chi))
+    Vphi=x+spin*E-2*x/p*(1+e*cos(chi))
+    Vt=spin**2*E-2*spin*x/p*(1+e*np.cos(chi)) + E*p**2/(1+e*np.cos(chi))**2
+    
+    Tr=2*np.sum(Vt/J/np.sqrt(Vr))*dchi
+    Dphi=2*np.sum(Vphi/J/np.sqrt(Vr))*dchi
+    omg_rdt=2*np.pi/Tr
+    omg_phidt=Dphi/Tr
+    
+    return omg_rdt,omg_phidt
 
-    #reference: https://arxiv.org/pdf/gr-qc/0202090.pdf (39)-(42)
-    myJ=(1-E**2)*(1-e**2)+2*(1-E**2-(1-e**2)/p)*(1+e*np.cos(chi))+((1-E**2)*(3+e**2)/(1-e**2) -4/p +(spin**2*(1-E**2)+Lz**2+Q)*(1-e**2)/p**2 )*np.power(1+e*np.cos(chi),2)
-    myH=1-2/p*(1+e*cos(chi))+(spin**2)/(p**2)*np.power(1+e*np.cos(chi),2)
-    myG=Lz-2*(Lz-spin*E)/p*(1+e*np.cos(chi))
 
-    myY=p**2*dchi*np.sum(np.multiply( np.power(1+e*np.cos(chi),-2) ,np.power(myJ,-0.5) ))
-    myZ=dchi*np.sum(np.multiply(myG, np.multiply( np.power(myH,-1),np.power(myJ,-0.5) ) ))
+def getfreq_dt_frommaxi(t,r,phi):
+    #由序列获得orbital frequency(对t的),这个序列必须是从r最大值开始的
+    #p=np.mean(r)
+    omgr=[]
+    omgphi=[]
+    indr=[]
+    phi=phi-phi[0]
+    n=1
+    for i in np.arange(t.size-1):
+        if i==0:
+            indr.append(i)
+        elif(r[i]>r[i-1] and r[i+1]<r[i]):
+            indr.append(i)
 
-    myomgr=np.pi*p/(1-e**2)/myY
-    myomgphi=myZ/myY
+    for ii in np.arange(len(indr)):
+        if ii==0:
+            continue
+        omgr.append(2*np.pi/(t[indr[ii]]-t[indr[ii-1]]))
+        omgphi.append((phi[indr[ii]]-phi[indr[ii-1]])/(t[indr[ii]]-t[indr[ii-1]]))
 
-    return myomgr,myomgphi
+    omgr=np.array(omgr)
+    avgomgr=np.mean(omgr)
+    avgomgphi=np.mean(np.array(omgphi))
+
+    return avgomgr,avgomgphi
