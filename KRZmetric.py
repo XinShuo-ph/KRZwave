@@ -589,3 +589,26 @@ def getfreq_dt_frommaxi(t,r,phi):
     avgomgphi=np.mean(np.array(omgphi))
 
     return avgomgr,avgomgphi
+
+def getfreq_sec_fromepma(e,p,M,spin):
+
+    omg=np.array(getfreq_dt_fromepa(e,p,spin))
+    ########转换单位
+    Grav=6.674e-11 #引力常数
+    clight=2.998e8 #光速
+    Msol=1.989e30  #太阳质量，以千克做单位
+
+    #把频率换成s^-1
+    omgsec=omg*clight**3/M/Msol/Grav
+    return omgsec
+def getfreq_sec_frommaxi(t,r,phi,M):
+
+    omgavg=np.array(getfreq_dt_frommaxi(t,r,phi))
+    ########转换单位
+    Grav=6.674e-11 #引力常数
+    clight=2.998e8 #光速
+    Msol=1.989e30  #太阳质量，以千克做单位
+
+    #把频率换成s^-1
+    omgavgsec=omgavg*clight**3/M/Msol/Grav
+    return omgavgsec
