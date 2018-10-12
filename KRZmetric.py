@@ -538,7 +538,7 @@ def getfreq_frommaxi(tau,r,phi):
 
     return avgomgr,avgomgphi
 
-def getfreq_dt_fromepa(e,p,spin):
+def getfreq_dt_fromepa_npsum(e,p,spin):
     rmax=p/(1-e)
     rmin=p/(1+e)
     invgmin=metric_KRZ_inverse(spin,0,rmin,np.pi/2)
@@ -563,10 +563,53 @@ def getfreq_dt_fromepa(e,p,spin):
     
     return omg_rdt,omg_phidt
 
+def Tr_int(chi,spin,e,p):
+    rmax=p/(1-e)
+    rmin=p/(1+e)
+    invgmin=metric_KRZ_inverse(spin,0,rmin,np.pi/2)
+    invgmax=metric_KRZ_inverse(spin,0,rmax,np.pi/2)
+
+    EoverL = ((invgmax[3][0] - invgmin[3][0]) + sqrt((invgmax[3][0] - invgmin[3][0]) *(invgmax[3][0] - invgmin[3][0]) - (invgmax[0][0] - invgmin[0][0])*(invgmax[3][3] - invgmin[3][3]))) / ( invgmax[0][0]-invgmin[0][0] );
+    Lz = sqrt( (invgmax[3][0]-invgmin[3][0]) / ( EoverL*EoverL*( invgmin[3][0]*invgmax[0][0] - invgmax[3][0]*invgmin[0][0] )+ ( invgmin[3][0]*invgmax[3][3]- invgmax[3][0]*invgmin[3][3] )  )   );
+    E=Lz*EoverL
+    x=Lz-spin*E
+    J=1-2*(1+e*np.cos(chi))/p+spin**2/p**2*(1+e*np.cos(chi))**2
+    Vr=x**2+spin**2+2*spin*x*E-2*x**2/p*(3+e*np.cos(chi))
+    Vphi=x+spin*E-2*x/p*(1+e*cos(chi))
+    Vt=spin**2*E-2*spin*x/p*(1+e*np.cos(chi)) + E*p**2/(1+e*np.cos(chi))**2
+
+    Tr_=2*Vt/J/np.sqrt(Vr)
+    return Tr_
+def Dphi_int(chi,spin,e,p):
+    rmax=p/(1-e)
+    rmin=p/(1+e)
+    invgmin=metric_KRZ_inverse(spin,0,rmin,np.pi/2)
+    invgmax=metric_KRZ_inverse(spin,0,rmax,np.pi/2)
+
+    EoverL = ((invgmax[3][0] - invgmin[3][0]) + sqrt((invgmax[3][0] - invgmin[3][0]) *(invgmax[3][0] - invgmin[3][0]) - (invgmax[0][0] - invgmin[0][0])*(invgmax[3][3] - invgmin[3][3]))) / ( invgmax[0][0]-invgmin[0][0] );
+    Lz = sqrt( (invgmax[3][0]-invgmin[3][0]) / ( EoverL*EoverL*( invgmin[3][0]*invgmax[0][0] - invgmax[3][0]*invgmin[0][0] )+ ( invgmin[3][0]*invgmax[3][3]- invgmax[3][0]*invgmin[3][3] )  )   );
+    E=Lz*EoverL
+    x=Lz-spin*E
+    J=1-2*(1+e*np.cos(chi))/p+spin**2/p**2*(1+e*np.cos(chi))**2
+    Vr=x**2+spin**2+2*spin*x*E-2*x**2/p*(3+e*np.cos(chi))
+    Vphi=x+spin*E-2*x/p*(1+e*cos(chi))
+    Vt=spin**2*E-2*spin*x/p*(1+e*np.cos(chi)) + E*p**2/(1+e*np.cos(chi))**2
+
+    Dp_=2*Vphi/J/np.sqrt(Vr)
+    return Dp_
+
+def getfreq_dt_fromepa(e,p,spin):
+    myTr,err=scipy.integrate.quad(Tr_int,0,np.pi,args=(spin,e,p))
+    myDphi,err=scipy.integrate.quad(Dphi_int,0,np.pi,args=(spin,e,p))
+    omg_rdt=2*np.pi/myTr
+    omg_phidt=myDphi/myTr
+    return omg_rdt,omg_phidt
 
 def getfreq_dt_frommaxi(t,r,phi):
     #由序列获得orbital frequency(对t的),这个序列必须是从r最大值开始的
     #p=np.mean(r)
+    #2018-10-10 最大值处如果两个数正好在第十位小数都相等，会出问题（这个点会没算进去），所以稍微改了一下
+    tol=9e-11 #数据里r的精度是1e-10
     omgr=[]
     omgphi=[]
     indr=[]
@@ -575,9 +618,18 @@ def getfreq_dt_frommaxi(t,r,phi):
     for i in np.arange(t.size-1):
         if i==0:
             indr.append(i)
-        elif(r[i]>r[i-1] and r[i+1]<r[i]):
+        elif(r[i]-r[i-1]>tol and r[i+1]-r[i]<-tol):
             indr.append(i)
+############2018-10-10##############
+        elif(r[i]-r[i-1]>tol and np.abs(r[i+1]-r[i])<tol  ):
+            testi=[]
+            for jj in range(100):
+                testi.append(i+jj)
+                if r[i+jj+1]-r[i+jj]<-tol:
+                    break
 
+            indr.append(int(round(np.mean(np.array(testi) ) ) ) )
+############2018-10-10##################
     for ii in np.arange(len(indr)):
         if ii==0:
             continue
