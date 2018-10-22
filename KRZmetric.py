@@ -238,7 +238,89 @@ def metric_KRZ_thderivatives(  spin,   d1,   z1,   z2) :
 
 
     return thdmn
+def Christoffel_KRZ(spin,d1,w1,w2):
+    rDg=metric_KRZ_rderivatives(spin, d1,  w1, w2);
+    thDg=metric_KRZ_thderivatives(spin, d1, w1, w2);
+    Dg=np.zeros((4,4,4))
+    Dg[0][0][1]=rDg[0][0];Dg[0][1][1]=rDg[0][1];Dg[0][2][1]=rDg[0][2];Dg[0][3][1]=rDg[0][3];
+    Dg[1][0][1]=rDg[1][0];Dg[1][1][1]=rDg[1][1];Dg[1][2][1]=rDg[1][2];Dg[1][3][1]=rDg[1][3];
+    Dg[2][0][1]=rDg[2][0];Dg[2][1][1]=rDg[2][1];Dg[2][2][1]=rDg[2][2];Dg[2][3][1]=rDg[2][3];
+    Dg[3][0][1]=rDg[3][0];Dg[3][1][1]=rDg[3][1];Dg[3][2][1]=rDg[3][2];Dg[3][3][1]=rDg[3][3];
+    Dg[0][0][2]=thDg[0][0];Dg[0][1][2]=thDg[0][1];Dg[0][2][2]=thDg[0][2];Dg[0][3][2]=thDg[0][3];
+    Dg[1][0][2]=thDg[1][0];Dg[1][1][2]=thDg[1][1];Dg[1][2][2]=thDg[1][2];Dg[1][3][2]=thDg[1][3];
+    Dg[2][0][2]=thDg[2][0];Dg[2][1][2]=thDg[2][1];Dg[2][2][2]=thDg[2][2];Dg[2][3][2]=thDg[2][3];
+    Dg[3][0][2]=thDg[3][0];Dg[3][1][2]=thDg[3][1];Dg[3][2][2]=thDg[3][2];Dg[3][3][2]=thDg[3][3];
+    g=metric_KRZ(spin, d1, w1, w2)
+    invg=metric_KRZ_inverse(spin, d1, w1, w2)
+    CS=np.zeros((4,4,4))
+    CS[0][0][0] = 0;
+    CS[0][0][1] = (invg[0][0] * Dg[0][0][1] + invg[0][3] * Dg[0][3][1]);
+    CS[0][0][2] = (invg[0][0] * Dg[0][0][2] + invg[0][3] * Dg[0][3][2]);
+    CS[0][0][3] = 0;
+    CS[0][1][0] = CS[0][0][1];
+    CS[0][1][1] = 0;
+    CS[0][1][2] = 0;
+    CS[0][1][3] = (invg[0][0] * Dg[0][3][1] + invg[0][3] * Dg[3][3][1]);
+    CS[0][2][0] = CS[0][0][2];
+    CS[0][2][1] = 0;
+    CS[0][2][2] = 0;
+    CS[0][2][3] = (invg[0][0] * Dg[0][3][2] + invg[0][3] * Dg[3][3][2]);
+    CS[0][3][0] = 0;
+    CS[0][3][1] = CS[0][1][3];
+    CS[0][3][2] = CS[0][2][3];
+    CS[0][3][3] = 0;
 
+    CS[1][0][0] = -invg[1][1] * Dg[0][0][1];
+    CS[1][0][1] = 0;
+    CS[1][0][2] = 0;
+    CS[1][0][3] = -invg[1][1] * Dg[0][3][1];
+    CS[1][1][0] = 0;
+    CS[1][1][1] = invg[1][1] * Dg[1][1][1];
+    CS[1][1][2] = invg[1][1] * Dg[1][1][2];
+    CS[1][1][3] = 0;
+    CS[1][2][0] = 0;
+    CS[1][2][1] = CS[1][1][2];
+    CS[1][2][2] = -invg[1][1] * Dg[2][2][1];
+    CS[1][2][3] = 0;
+    CS[1][3][0] = CS[1][0][3];
+    CS[1][3][1] = 0;
+    CS[1][3][2] = 0;
+    CS[1][3][3] = -invg[1][1] * Dg[3][3][1];
+
+    CS[2][0][0] = -invg[2][2] * Dg[0][0][2];
+    CS[2][0][1] = 0;
+    CS[2][0][2] = 0;
+    CS[2][0][3] = -invg[2][2] * Dg[0][3][2];
+    CS[2][1][0] = 0;
+    CS[2][1][1] = -invg[2][2] * Dg[1][1][2];
+    CS[2][1][2] = invg[2][2] * Dg[2][2][1];
+    CS[2][1][3] = 0;
+    CS[2][2][0] = 0;
+    CS[2][2][1] = CS[2][1][2];
+    CS[2][2][2] = invg[2][2] * Dg[2][2][2];
+    CS[2][2][3] = 0;
+    CS[2][3][0] = CS[2][0][3];
+    CS[2][3][1] = 0;
+    CS[2][3][2] = 0;
+    CS[2][3][3] = -invg[2][2] * Dg[3][3][2];
+
+    CS[3][0][0] = 0;
+    CS[3][0][1] = (invg[3][3] * Dg[0][3][1] + invg[3][0] * Dg[0][0][1]);
+    CS[3][0][2] = (invg[3][3] * Dg[0][3][2] + invg[3][0] * Dg[0][0][2]);
+    CS[3][0][3] = 0;
+    CS[3][1][0] = CS[3][0][1];
+    CS[3][1][1] = 0;
+    CS[3][1][2] = 0;
+    CS[3][1][3] = (invg[3][3] * Dg[3][3][1] + invg[3][0] * Dg[0][3][1]);
+    CS[3][2][0] = CS[3][0][2];
+    CS[3][2][1] = 0;
+    CS[3][2][2] = 0;
+    CS[3][2][3] = (invg[3][3] * Dg[3][3][2] + invg[3][0] * Dg[0][3][2]);
+    CS[3][3][0] = 0;
+    CS[3][3][1] = CS[3][1][3];
+    CS[3][3][2] = CS[3][2][3];
+    CS[3][3][3] = 0;
+    return CS
 
 def metric_KRZ_inverse(  spin,   d1,   z1,   z2) :
     r = z1;
@@ -308,6 +390,8 @@ def metric_KRZ_inverse(  spin,   d1,   z1,   z2) :
     invg[3][3] = g[0][0] / gg;
     '''
     return invg
+
+
 
 def getwave(filename,THETA,PHI):
 #读入文件名，和观测角，输出引力波
@@ -539,14 +623,25 @@ def getfreq_frommaxi(tau,r,phi):
     return avgomgr,avgomgphi
 
 def getfreq_dt_fromepa_npsum(e,p,spin):
-    rmax=p/(1-e)
-    rmin=p/(1+e)
-    invgmin=metric_KRZ_inverse(spin,0,rmin,np.pi/2)
-    invgmax=metric_KRZ_inverse(spin,0,rmax,np.pi/2)
+    if np.abs(e-0.0)>1e-8:
+        rmax=p/(1-e)
+        rmin=p/(1+e)
+        invgmin=metric_KRZ_inverse(spin,0,rmin,np.pi/2)
+        invgmax=metric_KRZ_inverse(spin,0,rmax,np.pi/2)
 
-    EoverL = ((invgmax[3][0] - invgmin[3][0]) + sqrt((invgmax[3][0] - invgmin[3][0]) *(invgmax[3][0] - invgmin[3][0]) - (invgmax[0][0] - invgmin[0][0])*(invgmax[3][3] - invgmin[3][3]))) / ( invgmax[0][0]-invgmin[0][0] );
-    Lz = sqrt( (invgmax[3][0]-invgmin[3][0]) / ( EoverL*EoverL*( invgmin[3][0]*invgmax[0][0] - invgmax[3][0]*invgmin[0][0] )+ ( invgmin[3][0]*invgmax[3][3]- invgmax[3][0]*invgmin[3][3] )  )   );
-    E=Lz*EoverL
+        EoverL = ((invgmax[3][0] - invgmin[3][0]) + sqrt((invgmax[3][0] - invgmin[3][0]) *(invgmax[3][0] - invgmin[3][0]) - (invgmax[0][0] - invgmin[0][0])*(invgmax[3][3] - invgmin[3][3]))) / ( invgmax[0][0]-invgmin[0][0] );
+        Lz = sqrt( (invgmax[3][0]-invgmin[3][0]) / ( EoverL*EoverL*( invgmin[3][0]*invgmax[0][0] - invgmax[3][0]*invgmin[0][0] )+ ( invgmin[3][0]*invgmax[3][3]- invgmax[3][0]*invgmin[3][3] )  )   );
+        E=Lz*EoverL
+        
+    else:
+        Gamma=Christoffel_KRZ(spin, 0, p, th);
+        g=metric_KRZ(spin, 0, p, th);
+        utoverup = (-Gamma[1][0][3] + np.sqrt(Gamma[1][0][3] * Gamma[1][0][3] - Gamma[1][3][3] * Gamma[1][0][0])) / Gamma[1][0][0];
+        testup = np.sqrt(-1 / (utoverup*utoverup*g[0][0] + 2 * utoverup*g[0][3] + g[3][3]));
+        testut = testup*utoverup;
+        E = -g[0][0] * testut - g[0][3] * testup;
+        Lz = g[0][3] * testut + g[3][3] * testup;
+        
     x=Lz-spin*E
     
     dchi=1e-6
@@ -564,14 +659,25 @@ def getfreq_dt_fromepa_npsum(e,p,spin):
     return omg_rdt,omg_phidt
 
 def Tr_int(chi,spin,e,p):
-    rmax=p/(1-e)
-    rmin=p/(1+e)
-    invgmin=metric_KRZ_inverse(spin,0,rmin,np.pi/2)
-    invgmax=metric_KRZ_inverse(spin,0,rmax,np.pi/2)
+    if np.abs(e-0.0)>1e-8:
+        rmax=p/(1-e)
+        rmin=p/(1+e)
+        invgmin=metric_KRZ_inverse(spin,0,rmin,np.pi/2)
+        invgmax=metric_KRZ_inverse(spin,0,rmax,np.pi/2)
 
-    EoverL = ((invgmax[3][0] - invgmin[3][0]) + sqrt((invgmax[3][0] - invgmin[3][0]) *(invgmax[3][0] - invgmin[3][0]) - (invgmax[0][0] - invgmin[0][0])*(invgmax[3][3] - invgmin[3][3]))) / ( invgmax[0][0]-invgmin[0][0] );
-    Lz = sqrt( (invgmax[3][0]-invgmin[3][0]) / ( EoverL*EoverL*( invgmin[3][0]*invgmax[0][0] - invgmax[3][0]*invgmin[0][0] )+ ( invgmin[3][0]*invgmax[3][3]- invgmax[3][0]*invgmin[3][3] )  )   );
-    E=Lz*EoverL
+        EoverL = ((invgmax[3][0] - invgmin[3][0]) + sqrt((invgmax[3][0] - invgmin[3][0]) *(invgmax[3][0] - invgmin[3][0]) - (invgmax[0][0] - invgmin[0][0])*(invgmax[3][3] - invgmin[3][3]))) / ( invgmax[0][0]-invgmin[0][0] );
+        Lz = sqrt( (invgmax[3][0]-invgmin[3][0]) / ( EoverL*EoverL*( invgmin[3][0]*invgmax[0][0] - invgmax[3][0]*invgmin[0][0] )+ ( invgmin[3][0]*invgmax[3][3]- invgmax[3][0]*invgmin[3][3] )  )   );
+        E=Lz*EoverL
+        
+    else:
+        Gamma=Christoffel_KRZ(spin, 0, p, np.pi/2);
+        g=metric_KRZ(spin, 0, p, np.pi/2);
+        utoverup = (-Gamma[1][0][3] + np.sqrt(Gamma[1][0][3] * Gamma[1][0][3] - Gamma[1][3][3] * Gamma[1][0][0])) / Gamma[1][0][0];
+        testup = np.sqrt(-1 / (utoverup*utoverup*g[0][0] + 2 * utoverup*g[0][3] + g[3][3]));
+        testut = testup*utoverup;
+        E = -g[0][0] * testut - g[0][3] * testup;
+        Lz = g[0][3] * testut + g[3][3] * testup;
+    
     x=Lz-spin*E
     J=1-2*(1+e*np.cos(chi))/p+spin**2/p**2*(1+e*np.cos(chi))**2
     Vr=x**2+spin**2+2*spin*x*E-2*x**2/p*(3+e*np.cos(chi))
@@ -581,14 +687,24 @@ def Tr_int(chi,spin,e,p):
     Tr_=2*Vt/J/np.sqrt(Vr)
     return Tr_
 def Dphi_int(chi,spin,e,p):
-    rmax=p/(1-e)
-    rmin=p/(1+e)
-    invgmin=metric_KRZ_inverse(spin,0,rmin,np.pi/2)
-    invgmax=metric_KRZ_inverse(spin,0,rmax,np.pi/2)
+    if np.abs(e-0.0)>1e-8:
+        rmax=p/(1-e)
+        rmin=p/(1+e)
+        invgmin=metric_KRZ_inverse(spin,0,rmin,np.pi/2)
+        invgmax=metric_KRZ_inverse(spin,0,rmax,np.pi/2)
 
-    EoverL = ((invgmax[3][0] - invgmin[3][0]) + sqrt((invgmax[3][0] - invgmin[3][0]) *(invgmax[3][0] - invgmin[3][0]) - (invgmax[0][0] - invgmin[0][0])*(invgmax[3][3] - invgmin[3][3]))) / ( invgmax[0][0]-invgmin[0][0] );
-    Lz = sqrt( (invgmax[3][0]-invgmin[3][0]) / ( EoverL*EoverL*( invgmin[3][0]*invgmax[0][0] - invgmax[3][0]*invgmin[0][0] )+ ( invgmin[3][0]*invgmax[3][3]- invgmax[3][0]*invgmin[3][3] )  )   );
-    E=Lz*EoverL
+        EoverL = ((invgmax[3][0] - invgmin[3][0]) + sqrt((invgmax[3][0] - invgmin[3][0]) *(invgmax[3][0] - invgmin[3][0]) - (invgmax[0][0] - invgmin[0][0])*(invgmax[3][3] - invgmin[3][3]))) / ( invgmax[0][0]-invgmin[0][0] );
+        Lz = sqrt( (invgmax[3][0]-invgmin[3][0]) / ( EoverL*EoverL*( invgmin[3][0]*invgmax[0][0] - invgmax[3][0]*invgmin[0][0] )+ ( invgmin[3][0]*invgmax[3][3]- invgmax[3][0]*invgmin[3][3] )  )   );
+        E=Lz*EoverL
+        
+    else:
+        Gamma=Christoffel_KRZ(spin, 0, p, np.pi/2);
+        g=metric_KRZ(spin, 0, p, np.pi/2);
+        utoverup = (-Gamma[1][0][3] + np.sqrt(Gamma[1][0][3] * Gamma[1][0][3] - Gamma[1][3][3] * Gamma[1][0][0])) / Gamma[1][0][0];
+        testup = np.sqrt(-1 / (utoverup*utoverup*g[0][0] + 2 * utoverup*g[0][3] + g[3][3]));
+        testut = testup*utoverup;
+        E = -g[0][0] * testut - g[0][3] * testup;
+        Lz = g[0][3] * testut + g[3][3] * testup;
     x=Lz-spin*E
     J=1-2*(1+e*np.cos(chi))/p+spin**2/p**2*(1+e*np.cos(chi))**2
     Vr=x**2+spin**2+2*spin*x*E-2*x**2/p*(3+e*np.cos(chi))
@@ -664,3 +780,30 @@ def getfreq_sec_frommaxi(t,r,phi,M):
     #把频率换成s^-1
     omgavgsec=omgavg*clight**3/M/Msol/Grav
     return omgavgsec
+
+def circfreq_sec_fromrma(r,M,spin):
+    Gamma=Christoffel_KRZ(spin, 0, r, np.pi/2);
+    g=metric_KRZ(spin, 0, r, np.pi/2);
+    utoverup = (-Gamma[1][0][3] + np.sqrt(Gamma[1][0][3] * Gamma[1][0][3] - Gamma[1][3][3] * Gamma[1][0][0])) / Gamma[1][0][0];
+    omg=1/utoverup
+    ########转换单位
+    Grav=6.674e-11 #引力常数
+    clight=2.998e8 #光速
+    Msol=1.989e30  #太阳质量，以千克做单位
+
+    #把频率换成s^-1
+    omgsec=omg*clight**3/M/Msol/Grav
+    return omgsec
+
+def circfreq_sec_fromtrace(t,phi,M):
+    
+    omg=(phi[-1]-phi[0])/(t[-1]-t[0])
+    ########转换单位
+    Grav=6.674e-11 #引力常数
+    clight=2.998e8 #光速
+    Msol=1.989e30  #太阳质量，以千克做单位
+
+    #把频率换成s^-1
+    omgsec=omg*clight**3/M/Msol/Grav
+    return omgsec
+        
