@@ -1,6 +1,7 @@
 
 # coding: utf-8
 from scipy.interpolate import interp1d
+from scipy.optimize import fsolve
 import numpy as np
 import scipy
 from numpy import sin,cos,sqrt
@@ -806,4 +807,118 @@ def circfreq_sec_fromtrace(t,phi,M):
     #把频率换成s^-1
     omgsec=omg*clight**3/M/Msol/Grav
     return omgsec
-        
+
+########### below: 3D frequency & subroutines
+def Vr_freq3sub(E,L,e,p,iota,spin):
+    #Vr at apestron and periastron, assuming Vth(theta_min)=0, i.e.Q=cos(theta)*(a**2*(1-E**2)+L**2/(sin(theta)*sin(theta)));
+    a=spin
+    ra=p/(1-e);
+    rp=p/(1+e);
+    theta=np.pi/2-iota;
+
+    Del=ra**2-2*ra+a**2;
+    P=E*(ra**2+a**2)-a*L;
+    Q=np.cos(theta)**2*(a**2*(1-E**2)+L**2/(np.sin(theta)*np.sin(theta)));
+    vra=P**2-Del*(ra**2+(L-a*E)**2+Q);
+
+    Delp=rp**2-2*rp+a**2;
+    Pp=E*(rp**2+a**2)-a*L;
+    vrp=Pp**2-Delp*(rp**2+(L-a*E)**2+Q);
+    return vra,vrp
+
+def Wtilt_int(chi,e,p,E,Lz,Q,spin):
+    myF=E+spin**2*E/p**2*(1+e*np.cos(chi))**2 - 2*spin*(Lz-spin*E)*(1+e*np.cos(chi))**3 / p**3 
+    myJ=(1-E**2)*(1-e**2)+2*(1-E**2-(1-e**2)/p)*(1+e*np.cos(chi))+((1-E**2)*(3+e**2)/(1-e**2) -4/p +(spin**2*(1-E**2)+Lz**2+Q)*(1-e**2)/p**2 )*(1+e*np.cos(chi))**2
+    myH=1-2/p*(1+e*cos(chi))+(spin**2)/(p**2)*(1+e*np.cos(chi))**2
+    myW_=p**2*myF/( (1+e*np.cos(chi))**2 * myH * np.sqrt(myJ) )
+    return myW_
+
+def Xtilt_int(chi,e,p,E,Lz,Q,spin):
+    
+    myJ=(1-E**2)*(1-e**2)+2*(1-E**2-(1-e**2)/p)*(1+e*np.cos(chi))+((1-E**2)*(3+e**2)/(1-e**2) -4/p +(spin**2*(1-E**2)+Lz**2+Q)*(1-e**2)/p**2 )*np.power(1+e*np.cos(chi),2)
+    myX_=1/np.sqrt(myJ)
+    return myX_
+
+def Ytilt_int(chi,e,p,E,Lz,Q,spin):
+    
+    myJ=(1-E**2)*(1-e**2)+2*(1-E**2-(1-e**2)/p)*(1+e*np.cos(chi))+((1-E**2)*(3+e**2)/(1-e**2) -4/p +(spin**2*(1-E**2)+Lz**2+Q)*(1-e**2)/p**2 )*(1+e*np.cos(chi))**2
+    myH=1-2/p*(1+e*cos(chi))+(spin**2)/(p**2)*(1+e*np.cos(chi))**2
+    myG=Lz-2*(Lz-spin*E)/p*(1+e*np.cos(chi))
+
+    myY_=p**2 /(1+e*np.cos(chi))**2/ np.sqrt(myJ) 
+    return myY_
+
+def Ztilt_int(chi,e,p,E,Lz,Q,spin):
+    
+    myJ=(1-E**2)*(1-e**2)+2*(1-E**2-(1-e**2)/p)*(1+e*np.cos(chi))+((1-E**2)*(3+e**2)/(1-e**2) -4/p +(spin**2*(1-E**2)+Lz**2+Q)*(1-e**2)/p**2 )*np.power(1+e*np.cos(chi),2)
+    myH=1-2/p*(1+e*cos(chi))+(spin**2)/(p**2)*np.power(1+e*np.cos(chi),2)
+    myG=Lz-2*(Lz-spin*E)/p*(1+e*np.cos(chi))
+    myZ_=np.multiply(myG, np.multiply( np.power(myH,-1),np.power(myJ,-0.5) ) )
+    return myZ_
+
+def freq3_dt(e,p,iota,spin):
+    def myfunc(x):
+        E=x[0]
+        L=x[1]
+        V= Vr_freq3sub(E,L,e,p,iota,spin)
+        #print('E:%f, L:%f, V: %f, %f'%(E,L,V[0],V[1]))
+        return V
+    E,Lz=fsolve(myfunc,[0.9,3.0])
+    th_min=np.pi/2-iota
+    Q=np.cos(th_min)**2*(spin**2*(1-E**2)+Lz**2/(np.sin(th_min)*np.sin(th_min)))
+    z_plus=np.sqrt(( Q+Lz**2+spin**2*(1-E**2) + np.sqrt( (Q+Lz**2+spin**2*(1-E**2))**2 - 4*Q*spin**2*(1-E**2) ) )/(2*spin**2*(1-E**2)))
+    z_minus=np.sqrt(( Q+Lz**2+spin**2*(1-E**2) - np.sqrt( (Q+Lz**2+spin**2*(1-E**2))**2 - 4*Q*spin**2*(1-E**2) ) )/(2*spin**2*(1-E**2)))
+    if np.abs(iota-0.0)<1e-20:
+        z_minus=0.0
+    beta=np.sqrt(spin**2*(1-E**2))
+    k=(z_minus/z_plus)**2
+    def K_int(psi,k):
+        return 1.0/np.sqrt(1-k*np.sin(psi)**2)
+    def E_int(psi,k):
+        return np.sqrt(1-k*np.sin(psi)**2)
+    def PI_int(psi,z_minus,k):
+        return 1.0/( (1-z_minus**2*np.sin(psi)**2)*np.sqrt(1-k*np.sin(psi)**2) )
+    K,err=scipy.integrate.quad(K_int,0,np.pi/2,args=(k))
+    E_k,err=scipy.integrate.quad(E_int,0,np.pi/2,args=(k))
+    PI,err=scipy.integrate.quad(PI_int,0,np.pi/2,args=(z_minus,k))
+    
+    Ytilt,err=scipy.integrate.quad(Ytilt_int,0,np.pi,args=(e,p,E,Lz,Q,spin))
+    Ztilt,err=scipy.integrate.quad(Ztilt_int,0,np.pi,args=(e,p,E,Lz,Q,spin))
+    Xtilt,err=scipy.integrate.quad(Xtilt_int,0,np.pi,args=(e,p,E,Lz,Q,spin))
+
+    LAMBDA=(Ytilt+spin**2 * z_plus**2*Xtilt)*K-spin**2 *z_plus**2 *Xtilt*E_k
+
+    omgr=np.pi*p*K/(1-e**2)/LAMBDA
+    omgth=np.pi*beta*z_plus*Xtilt/2/LAMBDA
+    omgphi=( (Ztilt-Lz*Xtilt)*K + Lz*Xtilt*PI )/LAMBDA
+    
+    Wtilt,err=scipy.integrate.quad(Wtilt_int,0,np.pi,args=(e,p,E,Lz,Q,spin))
+    gamma=( (Wtilt+spin**2*z_plus**2*E*Xtilt)*K - spin**2*z_plus**2*E*Xtilt*E_k )/LAMBDA
+    
+    omgr_dt=omgr/gamma
+    omgth_dt=omgth/gamma
+    omgphi_dt=omgphi/gamma
+    return omgr_dt,omgth_dt,omgphi_dt
+
+def freq3_sec(e,p,iota,spin,M):
+    omg=freq3_dt(e,p,iota,spin)
+    ########转换单位
+    Grav=6.674e-11 #引力常数
+    clight=2.998e8 #光速
+    Msol=1.989e30  #太阳质量，以千克做单位
+
+    #把频率换成s^-1
+    omgsec=np.array(omg)*clight**3/M/Msol/Grav
+    return omgsec
+######### above: 3D frequency & subroutines
+def getELQ(e,p,iota,spin):
+    def myfunc(x):
+        E=x[0]
+        L=x[1]
+        V= Vr_freq3sub(E,L,e,p,iota,spin)
+        #print('E:%f, L:%f, V: %f, %f'%(E,L,V[0],V[1]))
+        return V
+    E,Lz=fsolve(myfunc,[0.9,3.0])
+    th_min=np.pi/2-iota
+    Q=np.cos(th_min)**2*(spin**2*(1-E**2)+Lz**2/(np.sin(th_min)*np.sin(th_min)))
+    return E,Lz,Q
