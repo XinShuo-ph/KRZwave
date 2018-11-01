@@ -922,3 +922,78 @@ def getELQ(e,p,iota,spin):
     th_min=np.pi/2-iota
     Q=np.cos(th_min)**2*(spin**2*(1-E**2)+Lz**2/(np.sin(th_min)*np.sin(th_min)))
     return E,Lz,Q
+
+def freq3_dt_fromtrace(t,r,th,phi):
+    #由序列获得orbital frequency(对t的),这个序列必须是从r最大值开始的
+    #p=np.mean(r)
+    #2018-10-10 最大值处如果两个数正好在第十位小数都相等，会出问题（这个点会没算进去），所以稍微改了一下
+    tol=9e-11 #数据里r的精度是1e-10
+    omgr=[]
+    omgphi=[]
+    indr=[]
+    phi=phi-phi[0]
+    n=1
+    for i in np.arange(t.size-1):
+        if i==0:
+            indr.append(i)
+        elif(r[i]-r[i-1]>tol and r[i+1]-r[i]<-tol):
+            indr.append(i)
+    ############2018-10-10##############
+        elif(r[i]-r[i-1]>tol and np.abs(r[i+1]-r[i])<tol  ):
+            testi=[]
+            for jj in range(100):
+                testi.append(i+jj)
+                if r[i+jj+1]-r[i+jj]<-tol:
+                    break
+
+            indr.append(int(round(np.mean(np.array(testi) ) ) ) )
+    ############2018-10-10##################
+
+    #####2018-10-29 theta的ind
+    indth=[]
+    omgth=[]
+    for i in np.arange(t.size-1):
+        if i==0:
+            indth.append(i)
+        elif th[i]<=np.pi/2 and th[i+1]>np.pi/2:
+            indth.append(i)
+
+    for ii in np.arange(len(indr)):
+        if ii==0:
+            continue
+        omgr.append(2*np.pi/(t[indr[ii]]-t[indr[ii-1]]))
+        omgphi.append((phi[indr[ii]]-phi[indr[ii-1]])/(t[indr[ii]]-t[indr[ii-1]]))
+
+    #indth=indth[0:799]
+    for jj in np.arange(len(indth)):
+        if jj==0:
+            continue
+        omgth.append(2.0*np.pi/(t[indth[jj]]-t[indth[jj-1]]))
+    omgr=np.array(omgr)
+    avgomgr=np.mean(omgr)
+    avgomgphi=np.mean(np.array(omgphi))
+    avgomgth=np.mean(np.array(omgth))
+
+    #2018-10-29:试试直接数周期来当做omg
+    numofcyc=len(indr)-1
+    period=(t[indr[-1]]-t[indr[0]])/float(numofcyc)
+    dphi=(phi[indr[-1]]-phi[indr[0]])/float(numofcyc)
+    newomgr=2.0*np.pi/period
+    newomgphi=dphi/period
+    numofcycth=len(indth)-1
+    periodth=(t[indth[-1]]-t[indth[0]])/float(numofcycth)
+    newomgth=2.0*np.pi/periodth
+    return newomgr,newomgth,newomgphi
+
+def freq3_sec_fromtrace(t,r,th,phi,M):
+
+    omg=np.array(freq3_dt_fromtrace(t,r,th,phi))
+    ########转换单位
+    Grav=6.674e-11 #引力常数
+    clight=2.998e8 #光速
+    Msol=1.989e30  #太阳质量，以千克做单位
+
+    #把频率换成s^-1
+    omgavgsec=omg*clight**3/M/Msol/Grav
+    return omgavgsec
+
