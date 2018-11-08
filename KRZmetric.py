@@ -394,99 +394,154 @@ def metric_KRZ_inverse(  spin,   d1,   z1,   z2) :
 
 
 
-def getwave(filename,THETA,PHI):
+def getwave(filename,THETA=np.pi/4,PHI=0,M=1e6,R_pc=5e9,mu=1e-5,usenp=True):
 #读入文件名，和观测角，输出引力波
     try:
         index, tau,t,r,th,phi,ut,ur,uth,uphi,F_t,F_r,F_th,F_phi=np.loadtxt(filename,unpack=True)
     except:
-        print(filename+'  does not exist')
-        quit()
+        try:
+            index, myt_sec, tau,t,r,th,phi,ut,ur,uth,uphi,F_t,F_r,F_th,F_phi=np.loadtxt(filename,unpack=True)
+        except:
+            print(filename+'  does not exist')
+            quit()
+    
 
-    #qseudo_flat spacetime
-    x=[];
-    y=[];
-    z=[];
-    t_tau_dot=[]
-    z_tau_dot=[]
-    y_tau_dot=[]
-    x_tau_dot=[]
-    z_t_dot=[]
-    y_t_dot=[]
-    x_t_dot=[]
-    vr_tau_dot=[]
-    vth_tau_dot=[]
-    vphi_tau_dot=[]
-    vx_tau_dot=[]
-    vy_tau_dot=[]
-    vz_tau_dot=[]
-    x_t_2dot=[]
-    y_t_2dot=[]
-    z_t_2dot=[]
+    if usenp:
+        
+        x=r*np.sin(th)*np.cos(phi);
+        y=r*np.sin(th)*np.sin(phi);
+        z=(r*np.cos(th));
+        t_tau_dot=(ut)
+        x_tau_dot=(ur*np.sin(th)*np.cos(phi) + r*np.cos(th)*np.cos(phi)*uth - r*np.sin(th)*np.sin(phi)*uphi )
+        y_tau_dot=(ur*np.sin(th)*np.sin(phi) + r*np.cos(th)*np.sin(phi)*uth + r*np.sin(th)*np.cos(phi)*uphi )
+        z_tau_dot=(ur*np.cos(th) - r*np.sin(th)*uth)
+        x_t_dot=(x_tau_dot/t_tau_dot)
+        y_t_dot=(y_tau_dot/t_tau_dot)
+        z_t_dot=(z_tau_dot/t_tau_dot)
 
+        vr_tau_dot=( (F_r*t_tau_dot-ur*F_t)/t_tau_dot/t_tau_dot )
+        vth_tau_dot=( (F_th*t_tau_dot-uth*F_t)/t_tau_dot/t_tau_dot )
+        vphi_tau_dot=( (F_phi*t_tau_dot-uphi*F_t)/t_tau_dot/t_tau_dot )
 
-    for i in np.arange(index.size):
-        x.append(r[i]*np.sin(th[i])*np.cos(phi[i]));
-        y.append(r[i]*np.sin(th[i])*np.sin(phi[i]));
-        z.append(r[i]*np.cos(th[i]));
-        t_tau_dot.append(ut[i])
-        x_tau_dot.append(ur[i]*np.sin(th[i])*np.cos(phi[i]) + r[i]*np.cos(th[i])*np.cos(phi[i])*uth[i] - r[i]*np.sin(th[i])*np.sin(phi[i])*uphi[i] )
-        y_tau_dot.append(ur[i]*np.sin(th[i])*np.sin(phi[i]) + r[i]*np.cos(th[i])*np.sin(phi[i])*uth[i] + r[i]*np.sin(th[i])*np.cos(phi[i])*uphi[i] )
-        z_tau_dot.append(ur[i]*np.cos(th[i]) - r[i]*np.sin(th[i])*uth[i])
-        x_t_dot.append(x_tau_dot[i]/t_tau_dot[i])
-        y_t_dot.append(y_tau_dot[i]/t_tau_dot[i])
-        z_t_dot.append(z_tau_dot[i]/t_tau_dot[i])
+        vx_tau_dot=( vr_tau_dot*np.sin(th)*np.cos(phi) + ur/ut*np.cos(th)*np.cos(phi)*uth - ur/ut*np.sin(th)*np.sin(phi)*uphi\
+                          + ur*cos(th)*cos(phi)*uth/ut - r*sin(th)*cos(phi)*uth/ut*uth -r*cos(th)*sin(phi)*uth/ut*uphi +r*cos(th)*cos(phi)*vth_tau_dot  \
+                          - ur*sin(th)*sin(phi)*uphi/ut - r*cos(th)*sin(phi)*uphi/ut*uth - r*sin(th)*cos(phi)*uphi/ut*uphi - r*sin(th)*sin(phi)*vphi_tau_dot)
 
-        vr_tau_dot.append( (F_r[i]*t_tau_dot[i]-ur[i]*F_t[i])/t_tau_dot[i]/t_tau_dot[i] )
-        vth_tau_dot.append( (F_th[i]*t_tau_dot[i]-uth[i]*F_t[i])/t_tau_dot[i]/t_tau_dot[i] )
-        vphi_tau_dot.append( (F_phi[i]*t_tau_dot[i]-uphi[i]*F_t[i])/t_tau_dot[i]/t_tau_dot[i] )
+        vy_tau_dot=( vr_tau_dot*np.sin(th)*np.sin(phi) + ur/ut*np.cos(th)*np.sin(phi)*uth + ur/ut*np.sin(th)*np.cos(phi)*uphi\
+                          + ur*cos(th)*sin(phi)*uth/ut - r*sin(th)*sin(phi)*uth/ut*uth +r*cos(th)*cos(phi)*uth/ut*uphi +r*cos(th)*sin(phi)*vth_tau_dot  \
+                          + ur*sin(th)*cos(phi)*uphi/ut + r*cos(th)*cos(phi)*uphi/ut*uth - r*sin(th)*sin(phi)*uphi/ut*uphi + r*sin(th)*cos(phi)*vphi_tau_dot)
 
-        vx_tau_dot.append( vr_tau_dot[i]*np.sin(th[i])*np.cos(phi[i]) + ur[i]/ut[i]*np.cos(th[i])*np.cos(phi[i])*uth[i] - ur[i]/ut[i]*np.sin(th[i])*np.sin(phi[i])*uphi[i]\
-             + ur[i]*cos(th[i])*cos(phi[i])*uth[i]/ut[i] - r[i]*sin(th[i])*cos(phi[i])*uth[i]/ut[i]*uth[i] -r[i]*cos(th[i])*sin(phi[i])*uth[i]/ut[i]*uphi[i] +r[i]*cos(th[i])*cos(phi[i])*vth_tau_dot[i]  \
-             - ur[i]*sin(th[i])*sin(phi[i])*uphi[i]/ut[i] - r[i]*cos(th[i])*sin(phi[i])*uphi[i]/ut[i]*uth[i] - r[i]*sin(th[i])*cos(phi[i])*uphi[i]/ut[i]*uphi[i] - r[i]*sin(th[i])*sin(phi[i])*vphi_tau_dot[i])
+        vz_tau_dot=( vr_tau_dot*cos(th) -ur/ut*sin(th)*uth \
+                          -ur*sin(th)*uth/ut -r*cos(th)*uth/ut*uth - r*sin(th)*vth_tau_dot )
 
-        vy_tau_dot.append( vr_tau_dot[i]*np.sin(th[i])*np.sin(phi[i]) + ur[i]/ut[i]*np.cos(th[i])*np.sin(phi[i])*uth[i] + ur[i]/ut[i]*np.sin(th[i])*np.cos(phi[i])*uphi[i]\
-             + ur[i]*cos(th[i])*sin(phi[i])*uth[i]/ut[i] - r[i]*sin(th[i])*sin(phi[i])*uth[i]/ut[i]*uth[i] +r[i]*cos(th[i])*cos(phi[i])*uth[i]/ut[i]*uphi[i] +r[i]*cos(th[i])*sin(phi[i])*vth_tau_dot[i]  \
-             + ur[i]*sin(th[i])*cos(phi[i])*uphi[i]/ut[i] + r[i]*cos(th[i])*cos(phi[i])*uphi[i]/ut[i]*uth[i] - r[i]*sin(th[i])*sin(phi[i])*uphi[i]/ut[i]*uphi[i] + r[i]*sin(th[i])*cos(phi[i])*vphi_tau_dot[i])
+        x_t_2dot=(vx_tau_dot/ut)
+        y_t_2dot=(vy_tau_dot/ut)
+        z_t_2dot=(vz_tau_dot/ut)
 
-        vz_tau_dot.append( vr_tau_dot[i]*cos(th[i]) -ur[i]/ut[i]*sin(th[i])*uth[i] \
-                         -ur[i]*sin(th[i])*uth[i]/ut[i] -r[i]*cos(th[i])*uth[i]/ut[i]*uth[i] - r[i]*sin(th[i])*vth_tau_dot[i] )
-
-        x_t_2dot.append(vx_tau_dot[i]/ut[i])
-        y_t_2dot.append(vy_tau_dot[i]/ut[i])
-        z_t_2dot.append(vz_tau_dot[i]/ut[i])
-
-    #四极矩算法，在trace-reversed gauge的metric
-
-    hbar_xx=[]
-    hbar_yy=[]
-    hbar_zz=[]
-    hbar_xy=[]
-    hbar_yz=[]
-    hbar_xz=[]
-    for i in np.arange(index.size):
-        hbar_xx.append(4*(x_t_dot[i]*x_t_dot[i]+x[i]*x_t_2dot[i]))
-        hbar_yy.append(4*(y_t_dot[i]*y_t_dot[i]+y[i]*y_t_2dot[i]))
-        hbar_zz.append(4*(z_t_dot[i]*z_t_dot[i]+z[i]*z_t_2dot[i]))
-        hbar_xy.append(2*(y[i]*x_t_2dot[i]+y_t_2dot[i]*x[i]+2*y_t_dot[i]*x_t_dot[i]))
-        hbar_yz.append(2*(y[i]*z_t_2dot[i]+y_t_2dot[i]*z[i]+2*y_t_dot[i]*z_t_dot[i]))
-        hbar_xz.append(2*(z[i]*x_t_2dot[i]+z_t_2dot[i]*x[i]+2*z_t_dot[i]*x_t_dot[i]))
-
-    #由trace-reversed gauge转换到transverse traceless gauge
-
-    hTT_TT=[]
-    hTT_PP=[]
-    hTT_TP=[]
-    hTT_plus=[]
-    hTT_cross=[]
-
-    for i in np.arange(index.size):
+        #四极矩算法，在trace-reversed gauge的metric
 
 
-        hTT_TT.append( np.cos(THETA)*np.cos(THETA)* (hbar_xx[i]*np.cos(PHI)*np.cos(PHI) + hbar_xy[i]*np.sin(2*PHI) + hbar_yy[i]*np.sin(PHI)*np.sin(PHI) )  +  hbar_zz[i]*np.sin(THETA)*np.sin(THETA)  -  np.sin(2*THETA)* (hbar_xz[i]*np.cos(PHI)+hbar_yz[i]*np.sin(PHI))  )
-        hTT_TP.append( np.cos(THETA)* (-0.5*hbar_xx[i]*np.sin(2*PHI) + hbar_xy[i]*np.cos(2*PHI) + 0.5*hbar_yy[i]*np.sin(2*PHI))  +  np.sin(THETA)* (hbar_xz[i]*np.sin(PHI)-hbar_yz[i]*np.cos(PHI)) )
-        hTT_PP.append( hbar_xx[i]*np.sin(PHI)*np.sin(PHI)  -  hbar_xy[i]*np.sin(2*PHI)  +  hbar_yy[i]*np.cos(PHI)*np.cos(PHI) )
-        hTT_plus.append(0.5*(hTT_TT[i]-hTT_PP[i]))
-        hTT_cross.append(hTT_TP[i])
+        hbar_xx=(4*(x_t_dot*x_t_dot+x*x_t_2dot))
+        hbar_yy=(4*(y_t_dot*y_t_dot+y*y_t_2dot))
+        hbar_zz=(4*(z_t_dot*z_t_dot+z*z_t_2dot))
+        hbar_xy=(2*(y*x_t_2dot+y_t_2dot*x+2*y_t_dot*x_t_dot))
+        hbar_yz=(2*(y*z_t_2dot+y_t_2dot*z+2*y_t_dot*z_t_dot))
+        hbar_xz=(2*(z*x_t_2dot+z_t_2dot*x+2*z_t_dot*x_t_dot))
+
+        #由trace-reversed gauge转换到transverse traceless gauge
+
+
+
+        hTT_TT=( np.cos(THETA)*np.cos(THETA)* (hbar_xx*np.cos(PHI)*np.cos(PHI) + hbar_xy*np.sin(2*PHI) + hbar_yy*np.sin(PHI)*np.sin(PHI) )  +  hbar_zz*np.sin(THETA)*np.sin(THETA)  -  np.sin(2*THETA)* (hbar_xz*np.cos(PHI)+hbar_yz*np.sin(PHI))  )
+        hTT_TP=( np.cos(THETA)* (-0.5*hbar_xx*np.sin(2*PHI) + hbar_xy*np.cos(2*PHI) + 0.5*hbar_yy*np.sin(2*PHI))  +  np.sin(THETA)* (hbar_xz*np.sin(PHI)-hbar_yz*np.cos(PHI)) )
+        hTT_PP=( hbar_xx*np.sin(PHI)*np.sin(PHI)  -  hbar_xy*np.sin(2*PHI)  +  hbar_yy*np.cos(PHI)*np.cos(PHI) )
+        hTT_plus=(0.5*(hTT_TT-hTT_PP))
+        hTT_cross=(hTT_TP)
+
+    else:#不用np用append。。。
+        #qseudo_flat spacetime
+        x=[];
+        y=[];
+        z=[];
+        t_tau_dot=[]
+        z_tau_dot=[]
+        y_tau_dot=[]
+        x_tau_dot=[]
+        z_t_dot=[]
+        y_t_dot=[]
+        x_t_dot=[]
+        vr_tau_dot=[]
+        vth_tau_dot=[]
+        vphi_tau_dot=[]
+        vx_tau_dot=[]
+        vy_tau_dot=[]
+        vz_tau_dot=[]
+        x_t_2dot=[]
+        y_t_2dot=[]
+        z_t_2dot=[]
+        for i in np.arange(index.size):
+            x.append(r[i]*np.sin(th[i])*np.cos(phi[i]));
+            y.append(r[i]*np.sin(th[i])*np.sin(phi[i]));
+            z.append(r[i]*np.cos(th[i]));
+            t_tau_dot.append(ut[i])
+            x_tau_dot.append(ur[i]*np.sin(th[i])*np.cos(phi[i]) + r[i]*np.cos(th[i])*np.cos(phi[i])*uth[i] - r[i]*np.sin(th[i])*np.sin(phi[i])*uphi[i] )
+            y_tau_dot.append(ur[i]*np.sin(th[i])*np.sin(phi[i]) + r[i]*np.cos(th[i])*np.sin(phi[i])*uth[i] + r[i]*np.sin(th[i])*np.cos(phi[i])*uphi[i] )
+            z_tau_dot.append(ur[i]*np.cos(th[i]) - r[i]*np.sin(th[i])*uth[i])
+            x_t_dot.append(x_tau_dot[i]/t_tau_dot[i])
+            y_t_dot.append(y_tau_dot[i]/t_tau_dot[i])
+            z_t_dot.append(z_tau_dot[i]/t_tau_dot[i])
+
+            vr_tau_dot.append( (F_r[i]*t_tau_dot[i]-ur[i]*F_t[i])/t_tau_dot[i]/t_tau_dot[i] )
+            vth_tau_dot.append( (F_th[i]*t_tau_dot[i]-uth[i]*F_t[i])/t_tau_dot[i]/t_tau_dot[i] )
+            vphi_tau_dot.append( (F_phi[i]*t_tau_dot[i]-uphi[i]*F_t[i])/t_tau_dot[i]/t_tau_dot[i] )
+
+            vx_tau_dot.append( vr_tau_dot[i]*np.sin(th[i])*np.cos(phi[i]) + ur[i]/ut[i]*np.cos(th[i])*np.cos(phi[i])*uth[i] - ur[i]/ut[i]*np.sin(th[i])*np.sin(phi[i])*uphi[i]\
+                 + ur[i]*cos(th[i])*cos(phi[i])*uth[i]/ut[i] - r[i]*sin(th[i])*cos(phi[i])*uth[i]/ut[i]*uth[i] -r[i]*cos(th[i])*sin(phi[i])*uth[i]/ut[i]*uphi[i] +r[i]*cos(th[i])*cos(phi[i])*vth_tau_dot[i]  \
+                 - ur[i]*sin(th[i])*sin(phi[i])*uphi[i]/ut[i] - r[i]*cos(th[i])*sin(phi[i])*uphi[i]/ut[i]*uth[i] - r[i]*sin(th[i])*cos(phi[i])*uphi[i]/ut[i]*uphi[i] - r[i]*sin(th[i])*sin(phi[i])*vphi_tau_dot[i])
+
+            vy_tau_dot.append( vr_tau_dot[i]*np.sin(th[i])*np.sin(phi[i]) + ur[i]/ut[i]*np.cos(th[i])*np.sin(phi[i])*uth[i] + ur[i]/ut[i]*np.sin(th[i])*np.cos(phi[i])*uphi[i]\
+                 + ur[i]*cos(th[i])*sin(phi[i])*uth[i]/ut[i] - r[i]*sin(th[i])*sin(phi[i])*uth[i]/ut[i]*uth[i] +r[i]*cos(th[i])*cos(phi[i])*uth[i]/ut[i]*uphi[i] +r[i]*cos(th[i])*sin(phi[i])*vth_tau_dot[i]  \
+                 + ur[i]*sin(th[i])*cos(phi[i])*uphi[i]/ut[i] + r[i]*cos(th[i])*cos(phi[i])*uphi[i]/ut[i]*uth[i] - r[i]*sin(th[i])*sin(phi[i])*uphi[i]/ut[i]*uphi[i] + r[i]*sin(th[i])*cos(phi[i])*vphi_tau_dot[i])
+
+            vz_tau_dot.append( vr_tau_dot[i]*cos(th[i]) -ur[i]/ut[i]*sin(th[i])*uth[i] \
+                             -ur[i]*sin(th[i])*uth[i]/ut[i] -r[i]*cos(th[i])*uth[i]/ut[i]*uth[i] - r[i]*sin(th[i])*vth_tau_dot[i] )
+
+            x_t_2dot.append(vx_tau_dot[i]/ut[i])
+            y_t_2dot.append(vy_tau_dot[i]/ut[i])
+            z_t_2dot.append(vz_tau_dot[i]/ut[i])
+
+        #四极矩算法，在trace-reversed gauge的metric
+
+        hbar_xx=[]
+        hbar_yy=[]
+        hbar_zz=[]
+        hbar_xy=[]
+        hbar_yz=[]
+        hbar_xz=[]
+        for i in np.arange(index.size):
+            hbar_xx.append(4*(x_t_dot[i]*x_t_dot[i]+x[i]*x_t_2dot[i]))
+            hbar_yy.append(4*(y_t_dot[i]*y_t_dot[i]+y[i]*y_t_2dot[i]))
+            hbar_zz.append(4*(z_t_dot[i]*z_t_dot[i]+z[i]*z_t_2dot[i]))
+            hbar_xy.append(2*(y[i]*x_t_2dot[i]+y_t_2dot[i]*x[i]+2*y_t_dot[i]*x_t_dot[i]))
+            hbar_yz.append(2*(y[i]*z_t_2dot[i]+y_t_2dot[i]*z[i]+2*y_t_dot[i]*z_t_dot[i]))
+            hbar_xz.append(2*(z[i]*x_t_2dot[i]+z_t_2dot[i]*x[i]+2*z_t_dot[i]*x_t_dot[i]))
+
+        #由trace-reversed gauge转换到transverse traceless gauge
+
+        hTT_TT=[]
+        hTT_PP=[]
+        hTT_TP=[]
+        hTT_plus=[]
+        hTT_cross=[]
+
+        for i in np.arange(index.size):
+
+
+            hTT_TT.append( np.cos(THETA)*np.cos(THETA)* (hbar_xx[i]*np.cos(PHI)*np.cos(PHI) + hbar_xy[i]*np.sin(2*PHI) + hbar_yy[i]*np.sin(PHI)*np.sin(PHI) )  +  hbar_zz[i]*np.sin(THETA)*np.sin(THETA)  -  np.sin(2*THETA)* (hbar_xz[i]*np.cos(PHI)+hbar_yz[i]*np.sin(PHI))  )
+            hTT_TP.append( np.cos(THETA)* (-0.5*hbar_xx[i]*np.sin(2*PHI) + hbar_xy[i]*np.cos(2*PHI) + 0.5*hbar_yy[i]*np.sin(2*PHI))  +  np.sin(THETA)* (hbar_xz[i]*np.sin(PHI)-hbar_yz[i]*np.cos(PHI)) )
+            hTT_PP.append( hbar_xx[i]*np.sin(PHI)*np.sin(PHI)  -  hbar_xy[i]*np.sin(2*PHI)  +  hbar_yy[i]*np.cos(PHI)*np.cos(PHI) )
+            hTT_plus.append(0.5*(hTT_TT[i]-hTT_PP[i]))
+            hTT_cross.append(hTT_TP[i])
 
     #注意上面算出来的h还要*mu（mass ratio）/R（观测距离，也以M为单位）才是真的strain
     #发现一个小问题，上面定义的数据类型大部分都是list，但是array才比较好用
@@ -497,25 +552,25 @@ def getwave(filename,THETA,PHI):
     clight=2.998e8 #光速
     Msol=1.989e30  #太阳质量，以千克做单位
 
-    M=1e6 # clight*clight*clight/Grav/Msol/1 #中心天体质量，以太阳质量为单位
+    #M=1e6 # clight*clight*clight/Grav/Msol/1 #中心天体质量，以太阳质量为单位
 
     #把时间转换成秒
     t_sec=t*M*Msol*Grav/clight/clight/clight
-    dt=t_sec[1]-t_sec[0]
+    #dt=t_sec[1]-t_sec[0]
 
     #把pc距离转换成M为单位
-    R_pc=5e9  #以pc为单位的观测距离
+    #R_pc=5e9  #以pc为单位的观测距离
     R=R_pc*3.0857e16*clight*clight/Grav/M/Msol  #以中心天体质量为单位的，长度米与中心天体质量的换算是 1m/kg = clight*clight/G
 
     #小天体的质量
-    mu=1e-5 #应该是以中心天体质量为单位的
+    #mu=1e-5 #应该是以中心天体质量为单位的
 
     hTT_plus_true=np.array(hTT_plus)*mu/R
     hTT_cross_true=np.array(hTT_cross)*mu/R
 
     ########用于计算的波形，plus作为实部，cross作为虚部
 
-    return t,hTT_plus_true+hTT_cross_true*1j
+    return t_sec,hTT_plus_true+hTT_cross_true*1j
     
 def bracket(mydata,mytemp,dt,fnoise=[-1,-1],Snoise=[-1,-1]):
 #算mydata和mytemp的内积
@@ -983,6 +1038,17 @@ def freq3_dt_fromtrace(t,r,th,phi):
     numofcycth=len(indth)-1
     periodth=(t[indth[-1]]-t[indth[0]])/float(numofcycth)
     newomgth=2.0*np.pi/periodth
+    
+    #2018-11-3:对omgth做个修正，把尾部波动很大不在平均值附近的去掉，再重新数周期
+    for i in np.arange(100):
+        if i==0:
+            continue
+        if np.abs(omgth[-i]-newomgth)<2e-3:#精度2e-3,再除以约2e3个周期数，最后omg误差大约只有1e-6，经过1e5秒，还行吧
+            break
+    indth=indth[0:-i]
+    numofcycth=len(indth)-1
+    periodth=(t[indth[-1]]-t[indth[0]])/float(numofcycth)
+    newomgth=2.0*np.pi/periodth
     return newomgr,newomgth,newomgphi
 
 def freq3_sec_fromtrace(t,r,th,phi,M):
@@ -997,3 +1063,16 @@ def freq3_sec_fromtrace(t,r,th,phi,M):
     omgavgsec=omg*clight**3/M/Msol/Grav
     return omgavgsec
 
+def bracket_interp(wave1,wave2,tottime=-1,dt=5.0):
+#wave1,wave2满足wave[0]是时间，wave[1]是波形（复数，hplus+i*hcross）,也就是getwave给出的
+#LISA的采样间隔是5.0s
+    intp1=interp1d(wave1[0],wave1[1],kind='cubic')
+    intp2=interp1d(wave2[0],wave2[1],kind='cubic')
+    if tottime==-1:#默认是能取多少重叠就取多少重叠
+        tottime=min(wave2[0][-1],wave1[0][-1])
+    timeseries=np.arange(0,tottime,dt)
+    return bracket(intp2(timeseries),intp1(timeseries),dt)
+def overlap(wave1,wave2,tottime=-1,dt=5.0):
+    if tottime==-1:#默认是能取多少重叠就取多少重叠
+        tottime=min(wave2[0][-1],wave1[0][-1])
+    return bracket_interp(wave1,wave2,tottime=tottime,dt=dt)/np.sqrt( bracket_interp(wave1,wave1,tottime=tottime,dt=dt) *bracket_interp(wave2,wave2,tottime=tottime,dt=dt) )
