@@ -1072,6 +1072,7 @@ def bracket_interp(wave1,wave2,tottime=-1,dt=5.0):
         tottime=min(wave2[0][-1],wave1[0][-1])
     timeseries=np.arange(0,tottime,dt)
     return bracket(intp2(timeseries),intp1(timeseries),dt)
+
 def overlap(wave1,wave2,tottime=-1,dt=5.0):
     if tottime==-1:#默认是能取多少重叠就取多少重叠
         tottime=min(wave2[0][-1],wave1[0][-1])
